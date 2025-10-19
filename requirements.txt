@@ -1,0 +1,7 @@
+python-telegram-bot
+beautifulsoup4
+aiohttp
+python-dotenv
+pyrogram
+TgCrypto
+cloudscraper
