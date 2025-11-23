@@ -74,7 +74,7 @@ A Telegram bot that fetches the price of a Telegram Gift (NFT) from multiple mar
 
 To keep the bot running 24/7 on a server, you should run it inside a terminal multiplexer like `tmux` or `screen`. This will prevent the bot from stopping when you close your SSH session.
 
-### Using `tmux`
+### Using tmux
 
 1.  Start a new `tmux` session:
     ```bash
@@ -87,7 +87,7 @@ To keep the bot running 24/7 on a server, you should run it inside a terminal mu
 3.  Detach from the session by pressing `Ctrl+b` then `d`. The bot will continue running.
 4.  To re-attach to the session later, use: `tmux attach -t gift-bot`
 
-### Using `screen`
+### Using screen
 
 1.  Start a new `screen` session:
     ```bash
