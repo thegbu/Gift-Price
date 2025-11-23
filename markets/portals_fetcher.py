@@ -3,7 +3,7 @@ import asyncio
 import logging
 from .common import get_webapp_init_data
 
-PORTALS_API_URL = 'https://portals-market.com/api'
+PORTALS_API_URL = 'https://portal-market.com/api'
 BOT_USERNAME = "portals"
 BOT_SHORT_NAME = "market"
 PLATFORM = "android"
