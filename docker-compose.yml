@@ -1,0 +1,9 @@
+services:
+  gift-price-bot:
+    build: .
+    container_name: gift-price-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./markets:/app/markets

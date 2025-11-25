@@ -1,5 +1,7 @@
+"""WebApp authentication utilities for market bot APIs."""
 import logging
-from urllib.parse import unquote, urlparse, parse_qs
+from typing import Optional
+from urllib.parse import unquote
 from pyrogram.raw.functions.messages import RequestAppWebView
 from pyrogram.raw.types import InputBotAppShortName, InputUser
 
@@ -7,15 +9,14 @@ from .client_manager import client_manager
 
 log = logging.getLogger(__name__)
 
+
 async def get_webapp_init_data(
     session_name: str,
     bot_username: str,
     bot_short_name: str,
     platform: str = "android",
-) -> str | None:
-    """
-    Initializes a Pyrogram client, gets the web app URL, and extracts the init_data.
-    """
+) -> Optional[str]:
+    """Initializes a Pyrogram client and extracts WebApp init_data for API authentication."""
     client = await client_manager.get_client(session_name)
     if not client:
         log.error("Could not get a valid Pyrogram client for session '%s'.", session_name)
