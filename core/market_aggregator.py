@@ -5,7 +5,7 @@ from typing import Dict, Tuple, Optional, Any
 from markets.portals_fetcher import get_portal_prices
 from markets.mrkt_fetcher import get_mrkt_prices
 from markets.tonnel_fetcher import get_tonnel_prices
-from gift_parser import GiftDetails
+from .gift_parser import GiftDetails
 
 log = logging.getLogger(__name__)
 

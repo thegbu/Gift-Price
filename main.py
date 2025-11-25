@@ -63,7 +63,9 @@ def build_price_message(
         market_name="Tonnel",
         market_url=TONNEL_URL,
         price_simple=market_prices["tonnel"][0],
-        price_detailed=market_prices["tonnel"][1],
+        error_simple=market_prices["tonnel"][1],
+        price_detailed=market_prices["tonnel"][2],
+        error_detailed=market_prices["tonnel"][3],
         ton_to_usd_rate=ton_to_usd_rate,
         usdt_to_irr_rate=usdt_to_irr_rate,
         adjustment_factor=1.06
@@ -74,7 +76,9 @@ def build_price_message(
         market_name="Portals",
         market_url=PORTALS_URL,
         price_simple=market_prices["portals"][0],
-        price_detailed=market_prices["portals"][1],
+        error_simple=market_prices["portals"][1],
+        price_detailed=market_prices["portals"][2],
+        error_detailed=market_prices["portals"][3],
         ton_to_usd_rate=ton_to_usd_rate,
         usdt_to_irr_rate=usdt_to_irr_rate
     )
@@ -84,7 +88,9 @@ def build_price_message(
         market_name="MRKT",
         market_url=MRKT_URL,
         price_simple=market_prices["mrkt"][0],
-        price_detailed=market_prices["mrkt"][1],
+        error_simple=market_prices["mrkt"][1],
+        price_detailed=market_prices["mrkt"][2],
+        error_detailed=market_prices["mrkt"][3],
         ton_to_usd_rate=ton_to_usd_rate,
         usdt_to_irr_rate=usdt_to_irr_rate,
         is_nano_ton=True
