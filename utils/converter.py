@@ -33,9 +33,9 @@ def async_ttl_cache(ttl: int) -> Callable:
     return decorator
 
 
-@async_ttl_cache(ttl=60)
+@async_ttl_cache(ttl=200)
 async def get_rates() -> Optional[Dict[str, Optional[float]]]:
-    """Fetches TON/USD and USDT/IRR exchange rates with retry logic. Results are cached for 60 seconds."""
+    """Fetches TON/USD and USDT/IRR exchange rates with retry logic. Results are cached for 200 seconds."""
     ton_to_usd_rate: Optional[float] = None
     usdt_to_irr_rate: Optional[float] = None
     

@@ -69,7 +69,7 @@ async def get_mrkt_prices(collection_name: str, model_name: str, backdrop_name: 
         delay = 2
         for attempt in range(retries):
             try:
-                async with session.post(f"{MRKT_API_URL}/gifts/saling", headers=headers, json=payload, timeout=12) as response:
+                async with session.post(f"{MRKT_API_URL}/gifts/saling", headers=headers, json=payload, timeout=8) as response:
                     response.raise_for_status()
                     data = await response.json()
                     if gifts := data.get("gifts", []):

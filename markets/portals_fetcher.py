@@ -26,7 +26,7 @@ async def get_portal_prices(collection_name: str, model_name: str, backdrop_name
         """Fetches the collection ID from the collections search endpoint."""
         try:
             search_params = {"search": collection_name}
-            async with session.get(f"{PORTALS_API_URL}/collections", params=search_params, timeout=12, headers={'Authorization': f'tma {init_data}'}) as response:
+            async with session.get(f"{PORTALS_API_URL}/collections", params=search_params, timeout=8, headers={'Authorization': f'tma {init_data}'}) as response:
                 response.raise_for_status()
                 data = await response.json()
                 collections = data.get("collections", [])
@@ -58,7 +58,7 @@ async def get_portal_prices(collection_name: str, model_name: str, backdrop_name
         
         for attempt in range(retries):
             try:
-                async with session.get(f"{PORTALS_API_URL}/nfts/search", params=params, timeout=12, headers={'Authorization': f'tma {init_data}'}) as response:
+                async with session.get(f"{PORTALS_API_URL}/nfts/search", params=params, timeout=8, headers={'Authorization': f'tma {init_data}'}) as response:
                     response.raise_for_status()
                     data = await response.json()
                     if results := data.get("results", []):

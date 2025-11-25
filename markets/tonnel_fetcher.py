@@ -43,7 +43,7 @@ def get_tonnel_prices(gift_name: str, model: str, backdrop: str) -> tuple[Option
         delay = 2
         for attempt in range(retries):
             try:
-                res = scraper.post("https://gifts3.tonnel.network/api/pageGifts", headers=headers, json=payload, timeout=15)
+                res = scraper.post("https://gifts3.tonnel.network/api/pageGifts", headers=headers, json=payload, timeout=10)
                 res.raise_for_status()
                 data = res.json()
                 if isinstance(data, list) and data:
