@@ -20,13 +20,11 @@ async def fetch_all_market_prices(gift_details: GiftDetails) -> AllMarketPrices:
     model_name = gift_details["model_name"]
     backdrop_name = gift_details["backdrop_name"]
 
-    # Prepare model and backdrop strings for different market formats
     model_full = f"{model_name} ({gift_details['model_percent']})" if model_name and gift_details['model_percent'] else ""
     backdrop_full = f"{backdrop_name} ({gift_details['backdrop_percent']})" if backdrop_name and gift_details['backdrop_percent'] else ""
     model_clean = model_name.strip() if model_name else ""
     backdrop_clean = backdrop_name.strip() if backdrop_name else ""
 
-    # Fetch from all markets concurrently
     tonnel_task = asyncio.to_thread(get_tonnel_prices, gift_name_clean, model_full, backdrop_full)
     portals_task = get_portal_prices(gift_name_clean, model_clean, backdrop_clean)
     mrkt_task = get_mrkt_prices(gift_name_clean, model_clean, backdrop_clean)

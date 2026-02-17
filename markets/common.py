@@ -2,8 +2,8 @@
 import logging
 from typing import Optional
 from urllib.parse import unquote
-from pyrogram.raw.functions.messages import RequestAppWebView
-from pyrogram.raw.types import InputBotAppShortName, InputUser
+from telethon.tl.functions.messages import RequestAppWebViewRequest
+from telethon.tl.types import InputBotAppShortName, InputUser
 
 from .client_manager import client_manager
 
@@ -16,22 +16,29 @@ async def get_webapp_init_data(
     bot_short_name: str,
     platform: str = "android",
 ) -> Optional[str]:
-    """Initializes a Pyrogram client and extracts WebApp init_data for API authentication."""
+    """Initializes a Telethon client and extracts WebApp init_data for API authentication."""
     client = await client_manager.get_client(session_name)
     if not client:
-        log.error("Could not get a valid Pyrogram client for session '%s'.", session_name)
+        log.error("Could not get a valid Telethon client for session '%s'.", session_name)
         return None
 
     try:
-        peer = await client.resolve_peer(bot_username)
-        bot = InputUser(user_id=peer.user_id, access_hash=peer.access_hash)
-        bot_app = InputBotAppShortName(bot_id=bot, short_name=bot_short_name)
-        web_view = await client.invoke(
-            RequestAppWebView(peer=peer, app=bot_app, platform=platform)
-        )
+        bot_entity = await client.get_entity(bot_username)
+        
+        bot_input = InputUser(user_id=bot_entity.id, access_hash=bot_entity.access_hash)
+        
+        bot_app = InputBotAppShortName(bot_id=bot_input, short_name=bot_short_name)
+        
+        web_view = await client(RequestAppWebViewRequest(
+            peer=bot_entity,
+            app=bot_app,
+            platform=platform,
+            write_allowed=True
+        ))
+        
         if 'tgWebAppData=' in web_view.url:
             return unquote(web_view.url.split('tgWebAppData=', 1)[1].split('&tgWebAppVersion', 1)[0])
         log.error("Could not find 'tgWebAppData' in the web view URL for %s.", bot_username)
     except Exception as e:
-        log.error("Failed to get auth data for %s via Pyrogram: %s", bot_username, e)
-        return None
+        log.error("Failed to get auth data for %s via Telethon: %s", bot_username, e)
+    return None

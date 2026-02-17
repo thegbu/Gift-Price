@@ -58,7 +58,6 @@ def build_price_message(
     """Builds the complete price message with all market data."""
     output = format_gift_details(gift_details, link)
 
-    # Add Tonnel prices
     output += format_market_output(
         market_name="Tonnel",
         market_url=TONNEL_URL,
@@ -71,7 +70,6 @@ def build_price_message(
         adjustment_factor=1.06
     )
 
-    # Add Portals prices
     output += format_market_output(
         market_name="Portals",
         market_url=PORTALS_URL,
@@ -83,7 +81,6 @@ def build_price_message(
         usdt_to_irr_rate=usdt_to_irr_rate
     )
 
-    # Add MRKT prices
     output += format_market_output(
         market_name="MRKT",
         market_url=MRKT_URL,
@@ -204,7 +201,7 @@ def main() -> None:
         log.info("Bot application starting up...")
 
     async def on_shutdown(application) -> None:
-        log.info("Bot application shutting down. Stopping Pyrogram clients and closing aiohttp session...")
+        log.info("Bot application shutting down. Stopping Telethon clients and closing aiohttp session...")
         await client_manager.stop_all()
         await session_manager.close()
         log.info("All resources cleaned up successfully.")

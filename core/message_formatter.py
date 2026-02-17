@@ -10,7 +10,7 @@ def format_price(
     usdt_to_irr_rate: Optional[float]
 ) -> str:
     """Formats a price in TON with USD and IRR conversions, handling missing exchange rates gracefully."""
-    output = f"💰{label}: <code>{ton}</code> TON"
+    output = f"- {label}: <code>{ton}</code> TON"
 
     if ton_to_usd_rate:
         usd = ton_to_usd(ton, ton_to_usd_rate)
@@ -41,25 +41,23 @@ def format_market_output(
     else:
         output = f'\n\n🔎 {market_name}:\n<blockquote>'
 
-    # Format model price
     if error_simple:
-        output += "💰Model: Error fetching price\n"
+        output += "- Model: Error fetching price\n"
     elif price_simple is not None:
         price = price_simple / 1_000_000_000 if is_nano_ton else price_simple
         adjusted_price = round(price * adjustment_factor, 4)
         output += format_price("Model", adjusted_price, ton_to_usd_rate, usdt_to_irr_rate) + "\n"
     else:
-        output += "💰Model: Not found\n"
+        output += "- Model: Not found\n"
 
-    # Format model + backdrop price
     if error_detailed:
-        output += "💰Model + Backdrop: Error fetching price"
+        output += "- Model + Backdrop: Error fetching price"
     elif price_detailed is not None:
         price = price_detailed / 1_000_000_000 if is_nano_ton else price_detailed
         adjusted_price = round(price * adjustment_factor, 4)
         output += format_price("Model + Backdrop", adjusted_price, ton_to_usd_rate, usdt_to_irr_rate)
     else:
-        output += "💰Model + Backdrop: Not found"
+        output += "- Model + Backdrop: Not found"
 
     output += "</blockquote>"
     return output

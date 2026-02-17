@@ -50,7 +50,6 @@ async def get_rates() -> Optional[Dict[str, Optional[float]]]:
             nobitex_task = session.get(NOBITEX_URL, timeout=6)
             results = await asyncio.gather(ton_task, nobitex_task, return_exceptions=True)
 
-            # Process TON response
             if not isinstance(results[0], Exception):
                 tonapi_resp = results[0]
                 tonapi_resp.raise_for_status()
@@ -59,7 +58,6 @@ async def get_rates() -> Optional[Dict[str, Optional[float]]]:
                 if ton_data.get("prices", {}).get("USD"):
                     ton_to_usd_rate = float(ton_data["prices"]["USD"])
 
-            # Process Nobitex response
             if not isinstance(results[1], Exception):
                 nobitex_resp = results[1]
                 nobitex_resp.raise_for_status()
