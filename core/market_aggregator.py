@@ -1,4 +1,3 @@
-"""Market price fetching and aggregation utilities."""
 import asyncio
 import logging
 from typing import Dict, Tuple, Optional, Any
@@ -9,13 +8,18 @@ from .gift_parser import GiftDetails
 
 log = logging.getLogger(__name__)
 
-MarketPrice = Optional[float] | str
-MarketResult = Tuple[MarketPrice, bool, MarketPrice, bool]
+from typing import Dict, Tuple, Optional, Any, NamedTuple
+
+class MarketResult(NamedTuple):
+    price_simple: Optional[float]
+    error_simple: bool
+    price_detailed: Optional[float]
+    error_detailed: bool
+
 AllMarketPrices = Dict[str, MarketResult]
 
 
 async def fetch_all_market_prices(gift_details: GiftDetails) -> AllMarketPrices:
-    """Concurrently fetches prices from Tonnel, Portals, and MRKT."""
     gift_name_clean = gift_details["gift_name_clean"]
     model_name = gift_details["model_name"]
     backdrop_name = gift_details["backdrop_name"]
@@ -25,7 +29,7 @@ async def fetch_all_market_prices(gift_details: GiftDetails) -> AllMarketPrices:
     model_clean = model_name.strip() if model_name else ""
     backdrop_clean = backdrop_name.strip() if backdrop_name else ""
 
-    tonnel_task = asyncio.to_thread(get_tonnel_prices, gift_name_clean, model_full, backdrop_full)
+    tonnel_task = get_tonnel_prices(gift_name_clean, model_full, backdrop_full)
     portals_task = get_portal_prices(gift_name_clean, model_clean, backdrop_clean)
     mrkt_task = get_mrkt_prices(gift_name_clean, model_clean, backdrop_clean)
 
@@ -37,27 +41,22 @@ async def fetch_all_market_prices(gift_details: GiftDetails) -> AllMarketPrices:
     )
 
     def process_result(result: Any) -> MarketResult:
-        """Processes market results, converting exceptions and ERROR signals to standardized format."""
         if isinstance(result, Exception):
             log.error("Market fetcher raised an unhandled exception: %s", result)
-            return None, True, None, True
+            return MarketResult(None, True, None, True)
 
         price_simple, price_detailed = result
         error_simple = price_simple == "ERROR"
         error_detailed = price_detailed == "ERROR"
-        return (
+        return MarketResult(
             price_simple if not error_simple else None, 
             error_simple, 
             price_detailed if not error_detailed else None, 
             error_detailed
         )
 
-    price_tonnel_simple, error_tonnel_simple, price_tonnel_detailed, error_tonnel_detailed = process_result(results[0])
-    price_portal_simple, error_portal_simple, price_portal_detailed, error_portal_detailed = process_result(results[1])
-    price_mrkt_simple, error_mrkt_simple, price_mrkt_detailed, error_mrkt_detailed = process_result(results[2])
-
     return {
-        "tonnel": (price_tonnel_simple, error_tonnel_simple, price_tonnel_detailed, error_tonnel_detailed),
-        "portals": (price_portal_simple, error_portal_simple, price_portal_detailed, error_portal_detailed),
-        "mrkt": (price_mrkt_simple, error_mrkt_simple, price_mrkt_detailed, error_mrkt_detailed),
+        "tonnel": process_result(results[0]),
+        "portals": process_result(results[1]),
+        "mrkt": process_result(results[2]),
     }

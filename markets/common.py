@@ -1,4 +1,3 @@
-"""WebApp authentication utilities for market bot APIs."""
 import logging
 from typing import Optional
 from urllib.parse import unquote
@@ -16,7 +15,6 @@ async def get_webapp_init_data(
     bot_short_name: str,
     platform: str = "android",
 ) -> Optional[str]:
-    """Initializes a Telethon client and extracts WebApp init_data for API authentication."""
     client = await client_manager.get_client(session_name)
     if not client:
         log.error("Could not get a valid Telethon client for session '%s'.", session_name)

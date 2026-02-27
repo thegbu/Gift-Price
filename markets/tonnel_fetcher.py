@@ -1,33 +1,15 @@
-"""Tonnel marketplace price fetcher."""
-import cloudscraper
 import json
 import logging
-from concurrent.futures import ThreadPoolExecutor
-import time
+import asyncio
 from typing import Optional
+
+from utils.session_manager import session_manager
 
 log = logging.getLogger(__name__)
 
-_scraper: Optional[cloudscraper.CloudScraper] = None
 
-
-def get_scraper() -> cloudscraper.CloudScraper:
-    """Returns a shared cloudscraper instance using singleton pattern for performance."""
-    global _scraper
-    if _scraper is None:
-        browser_config = {
-            'browser': 'chrome',
-            'platform': 'windows',
-            'mobile': False,
-            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
-        }
-        _scraper = cloudscraper.create_scraper(browser=browser_config)
-    return _scraper
-
-
-def get_tonnel_prices(gift_name: str, model: str, backdrop: str) -> tuple[Optional[float], Optional[float]] | tuple[str, str]:
-    """Fetches gift prices from Tonnel marketplace for model-only and model+backdrop variants."""
-    scraper = get_scraper()
+async def get_tonnel_prices(gift_name: str, model: str, backdrop: str) -> tuple[Optional[float], Optional[float]] | tuple[str, str]:
+    session = await session_manager.get_session()
 
     headers = {
         "Accept": "application/json, text/plain, */*",
@@ -37,13 +19,12 @@ def get_tonnel_prices(gift_name: str, model: str, backdrop: str) -> tuple[Option
         "Referer": "https://market.tonnel.network/"
     }
 
-    def fetch(payload: dict) -> Optional[float] | str:
-        """Fetches price from Tonnel API with retry logic."""
+    async def fetch(payload: dict) -> Optional[float] | str:
         retries = 3
         delay = 2
         for attempt in range(retries):
             try:
-                res = scraper.post("https://gifts3.tonnel.network/api/pageGifts", headers=headers, json=payload, timeout=10)
+                res = await session.post("https://gifts3.tonnel.network/api/pageGifts", headers=headers, json=payload, timeout=15)
                 res.raise_for_status()
                 data = res.json()
                 if isinstance(data, list) and data:
@@ -51,9 +32,9 @@ def get_tonnel_prices(gift_name: str, model: str, backdrop: str) -> tuple[Option
                     return best.get("price")
                 return None
             except Exception as e:
-                log.warning(f"Tonnel fetch attempt {attempt + 1}/{retries} failed: {e}")
+                log.warning("Tonnel fetch attempt %d/%d failed: %s", attempt + 1, retries, e)
                 if attempt < retries - 1:
-                    time.sleep(delay)
+                    await asyncio.sleep(delay)
                 else:
                     log.error("All Tonnel fetch attempts failed. Final error: %s", e)
         return "ERROR"
@@ -81,12 +62,11 @@ def get_tonnel_prices(gift_name: str, model: str, backdrop: str) -> tuple[Option
     payload_with = {**base_payload, "filter": json.dumps(filter_with_backdrop)}
 
     try:
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            future_without = executor.submit(fetch, payload_without)
-            future_with = executor.submit(fetch, payload_with)
-            price_without = future_without.result()
-            price_with = future_with.result()
-            return price_without, price_with
+        results = await asyncio.gather(
+            fetch(payload_without),
+            fetch(payload_with)
+        )
+        return results[0], results[1]
     except Exception as e:
-        log.error("Unexpected error in Tonnel ThreadPoolExecutor: %s", e)
+        log.error("Unexpected error in Tonnel async fetcher: %s", e)
         return "ERROR", "ERROR"

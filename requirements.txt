@@ -3,4 +3,4 @@ beautifulsoup4
 aiohttp
 python-dotenv
 Telethon
-cloudscraper
+curl_cffi

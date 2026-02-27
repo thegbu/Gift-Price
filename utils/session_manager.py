@@ -1,57 +1,36 @@
-"""Shared aiohttp session manager for connection pooling."""
-import aiohttp
+import asyncio
 import logging
 from typing import Optional
+from curl_cffi.requests import AsyncSession
 
 log = logging.getLogger(__name__)
 
 
 class SessionManager:
-    """Manages a shared aiohttp ClientSession to reuse TCP connections across all HTTP requests."""
-    
     def __init__(self) -> None:
-        self._session: Optional[aiohttp.ClientSession] = None
-        self._connector: Optional[aiohttp.TCPConnector] = None
-    
-    async def get_session(self) -> aiohttp.ClientSession:
-        """Returns the shared session, creating it if necessary."""
-        if self._session is None or self._session.closed:
-            log.info("Creating new aiohttp ClientSession with connection pooling")
+        self._session: Optional[AsyncSession] = None
+        self._lock = asyncio.Lock()
+
+    async def get_session(self) -> AsyncSession:
+        if self._session is not None:
+            return self._session
+
+        async with self._lock:
+            if self._session is not None:
+                return self._session
+
+            log.info("Creating new curl_cffi AsyncSession for Cloudflare bypass")
             
-            self._connector = aiohttp.TCPConnector(
-                limit=100,
-                limit_per_host=30,
-                ttl_dns_cache=300,
-                enable_cleanup_closed=True
-            )
+            self._session = AsyncSession(impersonate="chrome142")
             
-            timeout = aiohttp.ClientTimeout(
-                total=30,
-                connect=10,
-                sock_read=10
-            )
-            
-            self._session = aiohttp.ClientSession(
-                connector=self._connector,
-                timeout=timeout
-            )
-            
-            log.info("aiohttp ClientSession created successfully")
-        
+            log.info("curl_cffi AsyncSession created successfully")
+
         return self._session
-    
+
     async def close(self) -> None:
-        """Closes the session and connector. Should be called during shutdown."""
-        if self._session and not self._session.closed:
-            await self._session.close()
-            log.info("aiohttp ClientSession closed")
-        
-        if self._connector:
-            await self._connector.close()
-            log.info("aiohttp TCPConnector closed")
-        
-        self._session = None
-        self._connector = None
+        if self._session:
+            self._session = None
+            log.info("curl_cffi AsyncSession reference cleared")
 
 
 session_manager = SessionManager()

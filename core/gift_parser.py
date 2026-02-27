@@ -1,4 +1,3 @@
-"""Gift details parsing and formatting utilities."""
 from typing import Dict, Optional
 from bs4 import BeautifulSoup
 import re
@@ -9,8 +8,7 @@ log = logging.getLogger(__name__)
 GiftDetails = Dict[str, Optional[str]]
 
 
-async def parse_gift_page(html: str, link: str) -> GiftDetails:
-    """Parses the HTML of a gift page to extract model, backdrop, symbol, and rarity details."""
+def parse_gift_page(html: str, link: str) -> GiftDetails:
     soup = BeautifulSoup(html, "html.parser")
     meta_title = soup.find("meta", property="og:title")
     title = meta_title["content"].strip() if meta_title else link
@@ -51,7 +49,6 @@ async def parse_gift_page(html: str, link: str) -> GiftDetails:
 
 
 def format_gift_details(gift_details: GiftDetails, link: str) -> str:
-    """Formats gift details into an HTML message with emojis and links."""
     output = f'🎁 <a href="{link}">{gift_details["title"]}</a>\n\n'
     
     if gift_details["model_name"]:

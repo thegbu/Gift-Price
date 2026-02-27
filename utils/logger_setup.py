@@ -1,14 +1,9 @@
-"""Logging configuration with console and rotating file handlers."""
 import logging
 from logging.handlers import RotatingFileHandler
 import sys
 
 
 def setup_logging() -> None:
-    """
-    Sets up logging to console (INFO+) and rotating file (ERROR+).
-    This function is idempotent and can be called multiple times safely.
-    """
     logger = logging.getLogger()
     if logger.hasHandlers():
         return

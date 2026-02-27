@@ -1,4 +1,3 @@
-"""Telethon client manager for Telegram bot authentication."""
 import asyncio
 import os
 from typing import Dict, Optional
@@ -8,20 +7,27 @@ import logging
 
 log = logging.getLogger(__name__)
 
+_VALID_SESSIONS = {"portals", "mrkt"}
+
 
 class TelethonClientManager:
-    """Manages Telethon clients to avoid repeated logins. Clients are cached and reused."""
-    
     def __init__(self) -> None:
         self._clients: Dict[str, TelegramClient] = {}
         self._locks: Dict[str, asyncio.Lock] = {
-            "portals": asyncio.Lock(),
-            "mrkt": asyncio.Lock()
+            name: asyncio.Lock() for name in _VALID_SESSIONS
         }
 
+    def _get_lock(self, session_name: str) -> asyncio.Lock:
+        if session_name not in self._locks:
+            raise ValueError(
+                f"Unknown session name '{session_name}'. "
+                f"Valid names are: {sorted(_VALID_SESSIONS)}"
+            )
+        return self._locks[session_name]
+
     async def get_client(self, session_name: str) -> Optional[TelegramClient]:
-        """Gets or creates a Telethon client for the specified session."""
-        async with self._locks[session_name]:
+        lock = self._get_lock(session_name)
+        async with lock:
             if session_name in self._clients and self._clients[session_name].is_connected():
                 return self._clients[session_name]
 
@@ -30,12 +36,12 @@ class TelethonClientManager:
                 session_path = os.path.join("markets", session_name)
                 client = TelegramClient(session_path, API_ID, API_HASH)
                 await client.connect()
-                
+
                 if not await client.is_user_authorized():
                     log.error("Client for '%s' is not authorized. Please run generate_sessions.py first.", session_name)
                     await client.disconnect()
                     return None
-                
+
                 self._clients[session_name] = client
                 log.info("Successfully started and cached Telethon client for '%s'.", session_name)
                 return client
@@ -44,7 +50,6 @@ class TelethonClientManager:
                 return None
 
     async def stop_all(self) -> None:
-        """Stops all active Telethon clients and clears the cache."""
         for session_name, client in self._clients.items():
             if client and client.is_connected():
                 await client.disconnect()

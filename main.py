@@ -18,9 +18,10 @@ from core.market_aggregator import fetch_all_market_prices
 setup_logging()
 log = logging.getLogger(__name__)
 
+TONNEL_PRICE_ADJUSTMENT = 1.06
+
 
 def create_reply_markup(bot_username: str) -> InlineKeyboardMarkup:
-    """Creates the inline keyboard with channel and 'Add to group' buttons."""
     keyboard = []
     if CHANNEL_URL and (CHANNEL_URL.startswith("http://") or CHANNEL_URL.startswith("https://")):
         keyboard.append([InlineKeyboardButton(CHANNEL_NAME, url=CHANNEL_URL)])
@@ -29,9 +30,8 @@ def create_reply_markup(bot_username: str) -> InlineKeyboardMarkup:
 
 
 async def fetch_gift_data(link: str) -> tuple[Optional[str], Optional[dict]]:
-    """Fetches HTML content and exchange rates concurrently."""
     session = await session_manager.get_session()
-    link_task = session.get(link, timeout=5)
+    link_task = session.get(link, timeout=15)
     rates_task = get_rates()
     
     try:
@@ -41,7 +41,7 @@ async def fetch_gift_data(link: str) -> tuple[Optional[str], Optional[dict]]:
             log.warning("Failed to fetch gift link %s. Status: %d", link, link_resp.status)
             return None, None
             
-        html = await link_resp.text()
+        html = link_resp.text
         return html, rates_data
     except Exception as e:
         log.error("Error fetching gift data: %s", e)
@@ -55,28 +55,27 @@ def build_price_message(
     ton_to_usd_rate: Optional[float],
     usdt_to_irr_rate: Optional[float]
 ) -> str:
-    """Builds the complete price message with all market data."""
     output = format_gift_details(gift_details, link)
 
     output += format_market_output(
         market_name="Tonnel",
         market_url=TONNEL_URL,
-        price_simple=market_prices["tonnel"][0],
-        error_simple=market_prices["tonnel"][1],
-        price_detailed=market_prices["tonnel"][2],
-        error_detailed=market_prices["tonnel"][3],
+        price_simple=market_prices["tonnel"].price_simple,
+        error_simple=market_prices["tonnel"].error_simple,
+        price_detailed=market_prices["tonnel"].price_detailed,
+        error_detailed=market_prices["tonnel"].error_detailed,
         ton_to_usd_rate=ton_to_usd_rate,
         usdt_to_irr_rate=usdt_to_irr_rate,
-        adjustment_factor=1.06
+        adjustment_factor=TONNEL_PRICE_ADJUSTMENT
     )
 
     output += format_market_output(
         market_name="Portals",
         market_url=PORTALS_URL,
-        price_simple=market_prices["portals"][0],
-        error_simple=market_prices["portals"][1],
-        price_detailed=market_prices["portals"][2],
-        error_detailed=market_prices["portals"][3],
+        price_simple=market_prices["portals"].price_simple,
+        error_simple=market_prices["portals"].error_simple,
+        price_detailed=market_prices["portals"].price_detailed,
+        error_detailed=market_prices["portals"].error_detailed,
         ton_to_usd_rate=ton_to_usd_rate,
         usdt_to_irr_rate=usdt_to_irr_rate
     )
@@ -84,10 +83,10 @@ def build_price_message(
     output += format_market_output(
         market_name="MRKT",
         market_url=MRKT_URL,
-        price_simple=market_prices["mrkt"][0],
-        error_simple=market_prices["mrkt"][1],
-        price_detailed=market_prices["mrkt"][2],
-        error_detailed=market_prices["mrkt"][3],
+        price_simple=market_prices["mrkt"].price_simple,
+        error_simple=market_prices["mrkt"].error_simple,
+        price_detailed=market_prices["mrkt"].price_detailed,
+        error_detailed=market_prices["mrkt"].error_detailed,
         ton_to_usd_rate=ton_to_usd_rate,
         usdt_to_irr_rate=usdt_to_irr_rate,
         is_nano_ton=True
@@ -97,7 +96,6 @@ def build_price_message(
 
 
 async def process_gift_link(link: str, message, bot_username: str) -> None:
-    """Processes a gift link and sends a formatted reply with prices from all markets."""
     if not link.startswith("http"):
         link = "https://" + link
     log.info("Processing gift link: %s", link)
@@ -113,7 +111,7 @@ async def process_gift_link(link: str, message, bot_username: str) -> None:
             await message.reply_text("Error fetching exchange rates. Please try again.")
             return
 
-        gift_details = await parse_gift_page(html, link)
+        gift_details = parse_gift_page(html, link)
 
         if not gift_details.get("model_name"):
             log.info("No model details found for link %s. Assuming it's an invalid gift.", link)
@@ -145,13 +143,11 @@ async def process_gift_link(link: str, message, bot_username: str) -> None:
 
 
 def extract_gift_link(text: str) -> Optional[str]:
-    """Extracts a Telegram gift link from text using regex."""
     match = re.search(r"(https?://)?t\.me/nft/[\w-]+", text)
     return match.group(0) if match else None
 
 
 async def price_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handles /p and /price commands, extracting the link from args or a replied message."""
     message = update.effective_message
     text_to_search = ""
 
@@ -178,7 +174,6 @@ async def price_command_handler(update: Update, context: ContextTypes.DEFAULT_TY
 
 
 async def send_welcome_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Sends a welcome message when users start the bot."""
     welcome_text = """Hello! 👋🏻
 With this bot, you can send Telegram gift links to get their prices across all three markets (Portals, Tonnel, MRKT). Just send the gift link, and the bot will display the prices.
 """
@@ -192,7 +187,6 @@ With this bot, you can send Telegram gift links to get their prices across all t
 
 
 def main() -> None:
-    """Initializes and runs the bot."""
     if not BOT_TOKEN:
         log.error("BOT_TOKEN not found! Please set it in your .env file.")
         return
@@ -206,7 +200,15 @@ def main() -> None:
         await session_manager.close()
         log.info("All resources cleaned up successfully.")
 
-    app = ApplicationBuilder().token(BOT_TOKEN).post_init(on_startup).post_shutdown(on_shutdown).build()
+    app = (
+        ApplicationBuilder()
+        .token(BOT_TOKEN)
+        .post_init(on_startup)
+        .post_shutdown(on_shutdown)
+        .connect_timeout(20.0)
+        .read_timeout(20.0)
+        .build()
+    )
 
     app.add_handler(CommandHandler(["start", "help"], send_welcome_message))
     app.add_handler(CommandHandler(["p", "price"], price_command_handler))
@@ -216,4 +218,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass

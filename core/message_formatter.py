@@ -1,6 +1,6 @@
-"""Message formatting utilities for the Gift Price Bot."""
 from typing import Optional
 from utils.converter import ton_to_usd, usd_to_irr, format_irr
+from utils.config import SHOW_USD, SHOW_IRR
 
 
 def format_price(
@@ -9,17 +9,27 @@ def format_price(
     ton_to_usd_rate: Optional[float], 
     usdt_to_irr_rate: Optional[float]
 ) -> str:
-    """Formats a price in TON with USD and IRR conversions, handling missing exchange rates gracefully."""
     output = f"- {label}: <code>{ton}</code> TON"
 
-    if ton_to_usd_rate:
+    conversions = []
+    
+    if SHOW_USD and ton_to_usd_rate:
         usd = ton_to_usd(ton, ton_to_usd_rate)
-        if usdt_to_irr_rate:
+        if SHOW_IRR and usdt_to_irr_rate:
             irr = usd_to_irr(usd, usdt_to_irr_rate)
             irr_formatted = format_irr(irr)
-            output += f"\n(<code>{usd}</code> USD = <code>{irr_formatted}</code> IRR)"
+            conversions.append(f"<code>{usd}</code> USD = <code>{irr_formatted}</code> IRR")
         else:
-            output += f"\n(<code>{usd}</code> USD)"
+            conversions.append(f"<code>{usd}</code> USD")
+    elif SHOW_IRR and ton_to_usd_rate and usdt_to_irr_rate:
+        usd = ton_to_usd(ton, ton_to_usd_rate)
+        irr = usd_to_irr(usd, usdt_to_irr_rate)
+        irr_formatted = format_irr(irr)
+        conversions.append(f"<code>{irr_formatted}</code> IRR")
+        
+    if conversions:
+        output += f"\n({', '.join(conversions)})"
+        
     return output
 
 
@@ -35,11 +45,10 @@ def format_market_output(
     adjustment_factor: float = 1.0,
     is_nano_ton: bool = False
 ) -> str:
-    """Formats market prices for both model-only and model+backdrop variants."""
     if market_url:
-        output = f'\n\n🔎 <a href="{market_url}">{market_name}</a>:\n<blockquote>'
+        output = f'\n\n🏪 <a href="{market_url}">{market_name}</a>:\n<blockquote>'
     else:
-        output = f'\n\n🔎 {market_name}:\n<blockquote>'
+        output = f'\n\n🏪 {market_name}:\n<blockquote>'
 
     if error_simple:
         output += "- Model: Error fetching price\n"
@@ -61,9 +70,3 @@ def format_market_output(
 
     output += "</blockquote>"
     return output
-
-
-def convert_persian_digits(text: str) -> str:
-    """Converts Persian/Arabic digits to English digits."""
-    persian_to_english = str.maketrans("۰۱۲۳۴۵۶۷۸۹", "0123456789")
-    return text.translate(persian_to_english)
